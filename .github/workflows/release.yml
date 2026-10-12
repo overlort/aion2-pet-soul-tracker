@@ -1,9 +1,11 @@
 name: Release
 
-# Тег vX.Y.Z -> собрать AionSoulTracker.exe на Windows и приложить к релизу.
+# Релиз выпускается, когда меняется файл VERSION (или вручную из вкладки Actions):
+# собрать AionSoulTracker.exe на Windows и создать релиз vX.Y.Z с этим exe.
 on:
   push:
-    tags: ["v*"]
+    branches: [main]
+    paths: [VERSION]
   workflow_dispatch:
 
 permissions:
@@ -14,6 +16,11 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Read version
+        id: ver
+        shell: bash
+        run: echo "tag=v$(tr -d '[:space:]' < VERSION)" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-python@v5
         with:
@@ -39,16 +46,11 @@ jobs:
           --add-data "data\pet_types.json;data"
           src\tracker.py
 
-      - name: Upload to release
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.ver.outputs.tag }}
+          name: ${{ steps.ver.outputs.tag }}
+          target_commitish: ${{ github.sha }}
           files: dist/AionSoulTracker.exe
           generate_release_notes: true
-
-      - name: Upload artifact (manual run)
-        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: AionSoulTracker
-          path: dist/AionSoulTracker.exe

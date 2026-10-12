@@ -61,8 +61,8 @@ build_exe.bat         :: собрать dist\AionSoulTracker.exe
 cd src && python test_pets.py && python test_aionwire.py
 ```
 
-Релиз: поставьте тег `vX.Y.Z` и отправьте его на GitHub (`git push --tags`).
-GitHub Actions соберёт exe и приложит его к релизу.
+Релиз: поменяйте число в файле `VERSION` (например, `1.0.1`) и отправьте изменение в `main`.
+GitHub Actions прогонит тесты, соберёт exe и создаст релиз `v1.0.1` с ним.
 
 | Файл | Что делает |
 |---|---|
