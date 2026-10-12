@@ -1,0 +1,54 @@
+name: Release
+
+# Тег vX.Y.Z -> собрать AionSoulTracker.exe на Windows и приложить к релизу.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt pyinstaller lz4
+
+      - name: Tests
+        working-directory: src
+        run: |
+          python test_aionwire.py
+          python test_pets.py
+
+      - name: Build exe
+        run: >
+          pyinstaller --noconfirm --onefile --noconsole --uac-admin
+          --name AionSoulTracker --paths src
+          --collect-submodules scapy --hidden-import tracker_ui --hidden-import pets
+          --add-data "data\pet_names.json;data"
+          --add-data "data\pet_types.json;data"
+          src\tracker.py
+
+      - name: Upload to release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/AionSoulTracker.exe
+          generate_release_notes: true
+
+      - name: Upload artifact (manual run)
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: AionSoulTracker
+          path: dist/AionSoulTracker.exe
