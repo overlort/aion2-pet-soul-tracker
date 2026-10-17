@@ -350,8 +350,10 @@ class TrackerOverlay:
 
         scale = tk.Scale(row, from_=int(OPACITY_MIN * 100), to=int(OPACITY_MAX * 100), orient="horizontal",
                          showvalue=False, resolution=5, length=200, command=on_opacity,
-                         bg=BG, fg=FG, troughcolor=TRACK, activebackground=ACCENT,
-                         highlightthickness=0, bd=0, sliderrelief="flat")
+                         # в tk.Scale цвет ползунка — это bg (а при наведении activebackground),
+                         # поэтому ползунок всегда золотой, а при наведении чуть светлее
+                         bg=ACCENT, fg=FG, troughcolor=TRACK, activebackground="#f0c060",
+                         highlightthickness=0, bd=0, sliderrelief="flat", sliderlength=16, width=12)
         scale.set(int(round(self.st["opacity"] * 100)))
         scale.pack(side="left", fill="x", expand=True)
         pct.configure(text=f"{int(round(self.st['opacity'] * 100))}%")
