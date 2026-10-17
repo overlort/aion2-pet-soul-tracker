@@ -52,9 +52,16 @@ class Catalog:
         style.map("Cat.Treeview", background=[("selected", TRACK)], foreground=[("selected", FG)])
         style.map("Cat.Treeview.Heading", background=[("active", PANEL)])
         style.configure("Cat.TCombobox", fieldbackground=PANEL, background=PANEL, foreground=FG,
-                        arrowcolor=FG, bordercolor=TRACK)
+                        arrowcolor=FG, bordercolor=TRACK, selectbackground=PANEL, selectforeground=FG)
+        # у readonly-комбобокса в теме clam свои цвета поля (светло-серое) — переопределяем явно
+        style.map("Cat.TCombobox",
+                  fieldbackground=[("readonly", PANEL)], background=[("readonly", TRACK)],
+                  foreground=[("readonly", FG)], selectbackground=[("readonly", PANEL)],
+                  selectforeground=[("readonly", FG)], arrowcolor=[("readonly", FG)])
         w.option_add("*TCombobox*Listbox.background", PANEL)
         w.option_add("*TCombobox*Listbox.foreground", FG)
+        w.option_add("*TCombobox*Listbox.selectBackground", ACCENT)
+        w.option_add("*TCombobox*Listbox.selectForeground", "#16130c")
 
         # поиск
         top = tk.Frame(w, bg=BG)
@@ -87,7 +94,7 @@ class Catalog:
             cb = ttk.Combobox(opts, textvariable=var, values=values, state="readonly", width=16,
                               style="Cat.TCombobox", font=("Segoe UI", 9))
             cb.pack(side="left", padx=(0, 10))
-            cb.bind("<<ComboboxSelected>>", lambda ev: self.refresh())
+            cb.bind("<<ComboboxSelected>>", lambda ev: (ev.widget.selection_clear(), self.refresh()))
 
         # таблица
         mid = tk.Frame(w, bg=BG)
