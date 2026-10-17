@@ -311,7 +311,8 @@ class TrackerOverlay:
     # ---------- каталог ----------
     def open_catalog(self):
         if self.catalog is not None and self.catalog.alive():
-            self.catalog.show()
+            self.catalog.close()      # повторный клик по книжке закрывает справочник
+            self.catalog = None
             return
         from catalog_ui import Catalog
         x, y = self._icons_pos or (100, 100)
