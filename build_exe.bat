@@ -26,9 +26,10 @@ if not exist ".venv\Scripts\python.exe" (
 
 ".venv\Scripts\python.exe" -m PyInstaller --noconfirm --onefile --noconsole --uac-admin ^
     --name AionSoulTracker --paths src ^
-    --collect-submodules scapy --hidden-import tracker_ui --hidden-import pets ^
+    --collect-submodules scapy --hidden-import tracker_ui --hidden-import pets --hidden-import catalog_ui --hidden-import catalog ^
     --add-data "data\pet_names.json;data" ^
     --add-data "data\pet_types.json;data" ^
+    --add-data "data\pet_farm.json;data" ^
     src\tracker.py
 echo.
 if exist "dist\AionSoulTracker.exe" (

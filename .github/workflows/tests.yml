@@ -19,3 +19,4 @@ jobs:
           python test_aionwire.py
           python test_pets.py
           python test_ui_logic.py
+          python test_catalog.py

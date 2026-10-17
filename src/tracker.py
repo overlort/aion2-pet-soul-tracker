@@ -70,6 +70,13 @@ def main():
     names = load_names(resource("data", "pet_names.json"))
     types = load_names(resource("data", "pet_types.json"))
     tracker = PetTracker(os.path.join(args.data, "pets_state.json"), names, types)
+    try:
+        import json
+        with open(resource("data", "pet_farm.json"), encoding="utf-8") as f:
+            tracker.farm = {int(k): v for k, v in json.load(f).items()}
+    except Exception as e:
+        log(f"Нет данных «где фармить»: {e}")
+        tracker.farm = {}
     session = sniff.Session(None, False, log, {sniff.dev_id(i): sniff.dev_label(i) for i in ifaces}, record=False)
     session.packet_hooks.append(tracker.on_packet)
 

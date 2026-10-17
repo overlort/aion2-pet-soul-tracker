@@ -1,9 +1,11 @@
 """Оверлей Aion 2 Soul Tracker.
 
 Основное окно: последний пет крупно, «Недавние» и «Почти готовы» (сворачиваются).
-Справа от окна — парящие кнопки, они всегда кликабельны (отдельное окно):
-    🔒/🔓  замок: закрыт — оверлей пропускает клики в игру; открыт — можно двигать и сворачивать
-    👁     глаз: спрятать/показать оверлей целиком (остаются только замок и глаз)
+Справа от окна — парящие кнопки:
+    🔒/🔓  замок (отдельное окно, кликабелен всегда): закрыт — оверлей и остальные кнопки
+           пропускают клики в игру; открыт — всё кликабельно, окно можно двигать
+    👁     глаз: спрятать/показать оверлей (остаются только замок и глаз)
+    📖     книжка: каталог всех петов — поиск, фильтры, где фармить
     ⚙      настройки: прозрачность, какие блоки показывать
 
 Прозрачность и пропуск кликов делаются средствами Windows (WS_EX_LAYERED + SetLayeredWindowAttributes,
@@ -216,14 +218,15 @@ class TrackerOverlay:
                                justify="left", wraplength=260)
         self._layout()
 
-        # парящие кнопки: отдельное окно, кликабельно всегда
-        icons = self.icons = tk.Toplevel(root)
-        icons.overrideredirect(True)
-        icons.attributes("-topmost", True)
-        icons.configure(bg=BG, highlightthickness=1, highlightbackground=BORDER)
-        self.btn_lock = self._icon_button("", lambda: self.set_locked(not self.st["locked"]))
-        self.btn_eye = self._icon_button("👁", lambda: self.set_hidden(not self.st["hidden"]))
-        self.btn_gear = self._icon_button("⚙", self.open_settings)
+        # парящие кнопки: замок — своё окно (кликабелен всегда), остальные — второе окно
+        self.lock_win = self._float_window()
+        self.tools_win = self._float_window()
+        self.btn_lock = self._icon_button(self.lock_win, "", lambda: self.set_locked(not self.st["locked"]))
+        self.btn_lock.pack(pady=1)
+        self.btn_eye = self._icon_button(self.tools_win, "👁", lambda: self.set_hidden(not self.st["hidden"]))
+        self.btn_book = self._icon_button(self.tools_win, "📖", self.open_catalog)
+        self.btn_gear = self._icon_button(self.tools_win, "⚙", self.open_settings)
+        self.catalog = None
         self._layout_icons()
 
         root.protocol("WM_DELETE_WINDOW", self.close)
@@ -235,22 +238,30 @@ class TrackerOverlay:
         self._tick()
 
     # ---------- кнопки ----------
-    def _icon_button(self, text, command):
-        b = self.tk.Label(self.icons, text=text, bg=BG, fg=MUTED, font=("Segoe UI Emoji", 10),
+    def _float_window(self):
+        w = self.tk.Toplevel(self.root)
+        w.overrideredirect(True)
+        w.attributes("-topmost", True)
+        w.configure(bg=BG, highlightthickness=1, highlightbackground=BORDER)
+        return w
+
+    def _icon_button(self, parent, text, command):
+        b = self.tk.Label(parent, text=text, bg=BG, fg=MUTED, font=("Segoe UI Emoji", 10),
                           cursor="hand2", width=2)
         b.bind("<Button-1>", lambda e: command())
         return b
 
     def _layout_icons(self):
-        for b in (self.btn_lock, self.btn_eye, self.btn_gear):
+        for b in (self.btn_eye, self.btn_book, self.btn_gear):
             b.pack_forget()
         locked, hidden = self.st["locked"], self.st["hidden"]
         self.btn_lock.configure(text="🔒" if locked else "🔓", fg=ACCENT if locked else MUTED)
         self.btn_eye.configure(fg=MUTED if hidden else FG)
-        self.btn_lock.pack(pady=(1, 0))
-        self.btn_eye.pack()
+        self.btn_eye.pack(pady=(1, 0))
         if not hidden:
+            self.btn_book.pack()
             self.btn_gear.pack(pady=(0, 1))
+        self.tools_win.update_idletasks()
 
     def _place_icons(self, force=False):
         try:
@@ -258,21 +269,28 @@ class TrackerOverlay:
                 self._icons_pos = (self.root.winfo_x() + self.root.winfo_width() + 2, self.root.winfo_y())
             if self._icons_pos is None:
                 self._icons_pos = (self.st.get("x", 60) + 280, self.st.get("y", 200))
-            if force or self._icons_pos != getattr(self, "_icons_placed", None):
-                self.icons.geometry(f"+{self._icons_pos[0]}+{self._icons_pos[1]}")
-                self._icons_placed = self._icons_pos
-            bring_to_top(self.icons)
+            x, y = self._icons_pos
+            ty = y + max(self.lock_win.winfo_height(), 24) + 2
+            if force or (x, y, ty) != getattr(self, "_icons_placed", None):
+                self.lock_win.geometry(f"+{x}+{y}")
+                self.tools_win.geometry(f"+{x}+{ty}")
+                self._icons_placed = (x, y, ty)
+            bring_to_top(self.tools_win)
+            bring_to_top(self.lock_win)
         except Exception:
             pass
 
     def _restyle(self):
-        apply_style(self.root, self.st["opacity"], self.st["locked"])
+        locked = self.st["locked"]
+        apply_style(self.root, self.st["opacity"], locked)
+        apply_style(self.tools_win, max(self.st["opacity"], 0.6), locked)   # кнопки — как оверлей
+        apply_style(self.lock_win, max(self.st["opacity"], 0.6), False)     # замок кликабелен всегда
 
     def set_locked(self, locked: bool, save: bool = True):
         self.st["locked"] = locked
         self._restyle()
         self._layout_icons()
-        bring_to_top(self.icons)
+        self._place_icons(force=True)
         if save:
             self.save_ui()
 
@@ -286,8 +304,18 @@ class TrackerOverlay:
             self.dirty = True
         self._layout_icons()
         self._place_icons(force=True)
+        self.root.after(60, self._restyle)
         if save:
             self.save_ui()
+
+    # ---------- каталог ----------
+    def open_catalog(self):
+        if self.catalog is not None and self.catalog.alive():
+            self.catalog.show()
+            return
+        from catalog_ui import Catalog
+        x, y = self._icons_pos or (100, 100)
+        self.catalog = Catalog(self.tk, self.root, self.t, (x + 40, y), self.st, self.save_ui)
 
     # ---------- настройки ----------
     def open_settings(self):
