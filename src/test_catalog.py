@@ -37,6 +37,7 @@ def test_regions():
     assert region_of("Kraka Footpath · Verteron · 10") == "elyos"
     assert region_of("Contaminated Marsh · Chaotic Middle Reshanta · 22") == "abyss"
     assert region_of("") == "dungeon"
+    assert region_of("Destroyed Abyss Gate · Verteron · 19") == "elyos"
 
 
 def test_normalize():
@@ -58,6 +59,10 @@ def test_filters_and_sort():
     elyos = filter_rows(rows, region="Элийцы (Verteron, Eltnen)")
     assert elyos and all("elyos" in r["regions"] for r in elyos)
     assert all(not r["mobs"] for r in filter_rows(rows, region="Не с мобов"))
+    dung = filter_rows(rows, region="Подземелья")
+    assert dung and all("подземелье" in r["where"] for r in dung)
+    abyss = filter_rows(rows, region="Бездна (Reshanta)")
+    assert abyss and all("Reshanta" in r["where"] for r in abyss)
 
 
 if __name__ == "__main__":

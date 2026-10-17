@@ -23,7 +23,7 @@ def region_of(loc: str) -> str:
     """'Zones · Altgard · 33 spawns' -> 'asmo' | 'elyos' | 'abyss' | 'dungeon' | 'other'."""
     if not loc:
         return "dungeon"
-    low = loc.lower()
+    low = region_name(loc).lower()   # только регион: в названиях зон бывает «Abyss» (Destroyed Abyss Gate · Verteron)
     if "reshanta" in low or "abyss" in low:
         return "abyss"
     if any(r in low for r in ASMO):
@@ -67,6 +67,14 @@ def normalize_farm(f) -> dict:
     return {"total": f.get("t") or len(rows), "rows": rows, "other": f.get("o", "")}
 
 
+def where_text(m: dict) -> str:
+    reg, zone = region_name(m["loc"]), zone_name(m["loc"])
+    return f"{m['mob']} · {zone} · {reg}" if zone else f"{m['mob']} · {reg}"
+
+
+REGION_KEYS = {REGIONS[1]: "asmo", REGIONS[2]: "elyos", REGIONS[3]: "abyss", REGIONS[4]: "dungeon"}
+
+
 def build_rows(tracker) -> list[dict]:
     farm = getattr(tracker, "farm", {}) or {}
     pets = set(tracker.names) | set(tracker.levels) | set(tracker.progress)
@@ -75,13 +83,7 @@ def build_rows(tracker) -> list[dict]:
         i = tracker.info(pet)
         f = normalize_farm(farm.get(pet) or farm.get(str(pet)))
         mobs = f.get("rows") or []
-        best = mobs[0] if mobs else None
-        if best:
-            reg = region_name(best["loc"])
-            zone = zone_name(best["loc"])
-            where = f"{best['mob']} · {zone} · {reg}" if zone else f"{best['mob']} · {reg}"
-        else:
-            where = "не с мобов (сундуки и др.)"
+        where = where_text(mobs[0]) if mobs else "не с мобов (сундуки и др.)"
         lvl = i["level"]
         rows.append({
             **i,
@@ -125,6 +127,9 @@ def filter_rows(rows, query="", family="Все", status="Все", region=REGIONS
            if (not q or all(w in r["search"] for w in q.split()))
            and (family in ("", "Все") or r["type"] == family)
            and _status_ok(r, status) and _region_ok(r, region)]
+    key = REGION_KEYS.get(region)
+    if key:  # при фильтре по региону «где фармить» показывает лучшего моба именно в этом регионе
+        out = [{**r, "where": where_text(next(m for m in r["mobs"] if region_of(m["loc"]) == key))} for r in out]
     if sort == "Имя":
         out.sort(key=lambda r: r["name"].lower())
     elif sort == "Уровень ↓":
