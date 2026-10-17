@@ -36,6 +36,7 @@ jobs:
         run: |
           python test_aionwire.py
           python test_pets.py
+          python test_ui_logic.py
 
       - name: Build exe
         run: >

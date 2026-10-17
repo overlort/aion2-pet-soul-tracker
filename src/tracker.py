@@ -1,4 +1,4 @@
-"""Трекер душ петов AION 2: оверлей поверх игры с прогрессом петов.
+"""Aion 2 Soul Tracker — трекер душ петов: оверлей поверх игры с прогрессом петов.
 
 Читает трафик игры пассивно (как DPS-метры), ничего не отправляет и не трогает игру.
 Точные числа берутся из списка петов, который сервер присылает при входе в мир,
@@ -30,7 +30,7 @@ def message(text: str, error: bool = True):
         from tkinter import messagebox
         r = tkinter.Tk()
         r.withdraw()
-        (messagebox.showerror if error else messagebox.showinfo)("Анубис=140 мора", text)
+        (messagebox.showerror if error else messagebox.showinfo)("Aion 2 Soul Tracker", text)
         r.destroy()
     except Exception:
         pass
